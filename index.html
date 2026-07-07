@@ -1,0 +1,689 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BASE QUEST — Number System Trials</title>
+<style>
+  :root{
+    --bg:#0a0e14;
+    --panel:#0f1620;
+    --panel2:#131d2a;
+    --ink:#d7e3d0;
+    --dim:#6f8577;
+    --phos:#6ee87a;      /* phosphor green */
+    --phos-soft:#3aa84a;
+    --amber:#ffb454;     /* amber accent */
+    --amber-soft:#c9832f;
+    --cyan:#5ad1e0;
+    --magenta:#e06ec0;
+    --danger:#ff5f6d;
+    --grid:rgba(110,232,122,.06);
+    --line:#22303f;
+    --mono:"JetBrains Mono","Fira Code","SF Mono",Consolas,"Courier New",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(circle at 50% -10%, rgba(110,232,122,.08), transparent 45%),
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/100% 26px,
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--mono);
+    line-height:1.5;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .scan{position:fixed;inset:0;pointer-events:none;z-index:60;
+    background:repeating-linear-gradient(180deg, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.14) 2px 3px);
+    mix-blend-mode:multiply;opacity:.5}
+  .wrap{max-width:940px;margin:0 auto;padding:22px 18px 70px}
+
+  /* ---------- header ---------- */
+  header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+    border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:20px;flex-wrap:wrap}
+  .brand{display:flex;flex-direction:column;gap:2px}
+  .brand .eyebrow{color:var(--dim);letter-spacing:.32em;font-size:11px;text-transform:uppercase}
+  .brand h1{margin:0;font-size:clamp(26px,5vw,40px);font-weight:800;letter-spacing:.04em;
+    color:var(--phos);text-shadow:0 0 14px rgba(110,232,122,.35)}
+  .brand h1 .b{color:var(--amber);text-shadow:0 0 14px rgba(255,180,84,.3)}
+  .hud{display:flex;gap:10px;flex-wrap:wrap}
+  .chip{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 12px;
+    min-width:88px;text-align:center}
+  .chip .k{display:block;color:var(--dim);font-size:10px;letter-spacing:.18em;text-transform:uppercase}
+  .chip .v{display:block;font-size:20px;font-weight:700;margin-top:2px}
+  .chip.score .v{color:var(--phos)}
+  .chip.streak .v{color:var(--amber)}
+  .chip.rank .v{color:var(--cyan);font-size:15px;letter-spacing:.02em;padding-top:3px}
+
+  /* ---------- intro / mission board ---------- */
+  .board{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:22px}
+  .board h2{margin:0 0 6px;font-size:15px;letter-spacing:.18em;text-transform:uppercase;color:var(--amber)}
+  .board p.lead{margin:.2em 0 16px;color:var(--ink)}
+  .board p.lead b{color:var(--phos)}
+
+  .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+  .mode{position:relative;text-align:left;cursor:pointer;background:var(--panel2);
+    border:1px solid var(--line);border-radius:12px;padding:15px 15px 14px;color:inherit;
+    font-family:inherit;transition:transform .12s ease,border-color .12s ease,box-shadow .12s ease}
+  .mode:hover{transform:translateY(-3px);border-color:var(--phos-soft);
+    box-shadow:0 8px 24px rgba(0,0,0,.4),0 0 0 1px rgba(110,232,122,.15)}
+  .mode:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  .mode .idx{font-size:11px;color:var(--dim);letter-spacing:.2em}
+  .mode .nm{display:block;font-size:18px;font-weight:700;margin:6px 0 4px}
+  .mode .ds{font-size:12.5px;color:var(--dim);min-height:34px}
+  .mode .go{margin-top:10px;font-size:12px;color:var(--phos);letter-spacing:.1em}
+  .mode.m1 .nm{color:var(--phos)} .mode.m2 .nm{color:var(--amber)}
+  .mode.m3 .nm{color:var(--cyan)} .mode.m4 .nm{color:var(--magenta)}
+  .mode .tag{position:absolute;top:12px;right:12px;font-size:9.5px;letter-spacing:.14em;
+    color:var(--dim);border:1px solid var(--line);border-radius:20px;padding:2px 8px;text-transform:uppercase}
+
+  .legend{margin-top:18px;border-top:1px dashed var(--line);padding-top:14px;
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
+  .legend .li{font-size:12px}
+  .legend .li b{display:block;font-size:12px;letter-spacing:.06em}
+  .legend .dec b{color:var(--ink)} .legend .bin b{color:var(--phos)}
+  .legend .oct b{color:var(--amber)} .legend .hex b{color:var(--cyan)}
+  .legend .li span{color:var(--dim)}
+
+  /* ---------- play area ---------- */
+  .play{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden;display:none}
+  .play.active{display:block}
+  .play .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 18px;border-bottom:1px solid var(--line);background:var(--panel2);flex-wrap:wrap}
+  .play .bar .title{font-weight:700;letter-spacing:.06em}
+  .play .bar .title small{display:block;color:var(--dim);font-weight:400;font-size:11px;letter-spacing:.14em;text-transform:uppercase}
+  .progress{flex:1;min-width:120px;height:8px;background:#0b1119;border:1px solid var(--line);
+    border-radius:20px;overflow:hidden;max-width:280px}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--phos-soft),var(--phos));
+    transition:width .3s ease}
+  .qcount{font-size:12px;color:var(--dim);letter-spacing:.1em;white-space:nowrap}
+  .btn-quit{background:none;border:1px solid var(--line);color:var(--dim);font-family:inherit;
+    font-size:11px;letter-spacing:.14em;padding:6px 12px;border-radius:8px;cursor:pointer;text-transform:uppercase}
+  .btn-quit:hover{color:var(--danger);border-color:var(--danger)}
+
+  .stage{padding:26px 22px 30px}
+  .prompt{text-align:center;margin-bottom:8px;color:var(--dim);font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+  .qbox{text-align:center;margin:6px 0 8px}
+  .qbox .from{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .qval{font-size:clamp(38px,9vw,66px);font-weight:800;letter-spacing:.06em;margin:4px 0 2px;
+    word-break:break-all}
+  .qval .sub{font-size:.32em;vertical-align:sub;color:var(--dim);font-weight:600;letter-spacing:0}
+  .to{font-size:13px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase;margin-bottom:20px}
+  .to b{color:var(--amber)}
+  .to.bin b{color:var(--phos)} .to.oct b{color:var(--amber)} .to.hex b{color:var(--cyan)} .to.dec b{color:var(--ink)}
+
+  /* answer input */
+  .answer{display:flex;gap:10px;justify-content:center;align-items:stretch;flex-wrap:wrap;margin-bottom:8px}
+  .answer input{font-family:inherit;font-size:26px;font-weight:700;letter-spacing:.14em;text-align:center;
+    background:#0b1119;border:1px solid var(--line);border-radius:10px;color:var(--phos);
+    padding:12px 16px;width:min(340px,80vw);text-transform:uppercase}
+  .answer input:focus{outline:none;border-color:var(--phos);box-shadow:0 0 0 3px rgba(110,232,122,.15)}
+  .answer input.shake{animation:shake .38s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}
+    60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .btn{font-family:inherit;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:14px;
+    border:none;border-radius:10px;padding:12px 22px;cursor:pointer;background:var(--phos);color:#06120a;
+    transition:filter .12s ease,transform .08s ease}
+  .btn:hover{filter:brightness(1.08)} .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  .btn.ghost:hover{border-color:var(--phos);color:var(--phos)}
+
+  /* multiple choice */
+  .choices{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:520px;margin:2px auto 0}
+  .choice{font-family:inherit;font-size:22px;font-weight:700;letter-spacing:.1em;padding:16px;
+    background:#0b1119;border:1px solid var(--line);border-radius:10px;color:var(--ink);cursor:pointer;
+    transition:border-color .12s,background .12s;text-transform:uppercase}
+  .choice:hover{border-color:var(--cyan)}
+  .choice:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+  .choice.correct{background:rgba(110,232,122,.16);border-color:var(--phos);color:var(--phos)}
+  .choice.wrong{background:rgba(255,95,109,.14);border-color:var(--danger);color:var(--danger)}
+  .choice:disabled{cursor:default}
+
+  .helpbar{display:flex;justify-content:center;gap:14px;margin-top:16px;flex-wrap:wrap}
+  .hint-btn{background:none;border:1px dashed var(--line);color:var(--dim);font-family:inherit;font-size:12px;
+    letter-spacing:.12em;padding:8px 14px;border-radius:8px;cursor:pointer;text-transform:uppercase}
+  .hint-btn:hover{color:var(--amber);border-color:var(--amber-soft)}
+
+  /* feedback + working */
+  .feedback{margin-top:18px;border-top:1px solid var(--line);padding-top:16px;display:none}
+  .feedback.show{display:block}
+  .verdict{text-align:center;font-size:18px;font-weight:700;letter-spacing:.08em;margin-bottom:12px}
+  .verdict.ok{color:var(--phos)} .verdict.no{color:var(--danger)}
+  .work{background:#0b1119;border:1px solid var(--line);border-radius:10px;padding:14px 16px;font-size:13px}
+  .work .wt{color:var(--amber);letter-spacing:.14em;text-transform:uppercase;font-size:11px;margin-bottom:8px}
+  .work table{width:100%;border-collapse:collapse;font-size:13px}
+  .work td,.work th{padding:4px 6px;text-align:center;border:1px solid var(--line)}
+  .work th{color:var(--dim);font-weight:600}
+  .work .pos{color:var(--cyan)} .work .bit{color:var(--phos);font-weight:700}
+  .work .sum{color:var(--amber);font-weight:700}
+  .work p{margin:8px 0 0;color:var(--dim)}
+  .work code{color:var(--ink)}
+  .next-row{text-align:center;margin-top:16px}
+
+  /* hint panel */
+  .hintpanel{margin-top:14px;background:rgba(255,180,84,.06);border:1px solid var(--amber-soft);
+    border-radius:10px;padding:12px 14px;font-size:13px;color:var(--ink);display:none}
+  .hintpanel.show{display:block}
+  .hintpanel b{color:var(--amber)}
+  .refgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-top:8px;font-size:11px}
+  .refgrid div{background:#0b1119;border:1px solid var(--line);padding:3px;text-align:center}
+  .refgrid .h{color:var(--dim)} .refgrid .val{color:var(--cyan)}
+
+  /* ---------- summary ---------- */
+  .summary{display:none;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:28px 22px;text-align:center}
+  .summary.active{display:block}
+  .summary h2{margin:0 0 4px;font-size:14px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim)}
+  .summary .big{font-size:clamp(46px,12vw,86px);font-weight:800;color:var(--phos);
+    text-shadow:0 0 20px rgba(110,232,122,.35);line-height:1;margin:6px 0}
+  .summary .sub{color:var(--ink);font-size:15px;margin-bottom:4px}
+  .summary .newrank{color:var(--cyan);letter-spacing:.1em;margin:10px 0 20px;font-size:15px}
+  .summary .stats{display:flex;justify-content:center;gap:26px;flex-wrap:wrap;margin:18px 0 24px}
+  .summary .stats .st .n{font-size:26px;font-weight:700}
+  .summary .stats .st .l{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+  .summary .stats .ok .n{color:var(--phos)} .summary .stats .miss .n{color:var(--danger)}
+  .summary .stats .best .n{color:var(--amber)}
+  .summary .actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+  footer.foot{margin-top:26px;text-align:center;color:var(--dim);font-size:11px;letter-spacing:.14em}
+  .cursor{display:inline-block;width:9px;height:16px;background:var(--phos);vertical-align:-2px;
+    margin-left:3px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  @media (max-width:520px){
+    .choices{grid-template-columns:1fr}
+    .qval{font-size:44px}
+    .hud{width:100%;justify-content:space-between}
+    .chip{flex:1;min-width:0}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .scan{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="scan" aria-hidden="true"></div>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <span class="eyebrow">Number System Trials · Assignment</span>
+      <h1>BASE<span class="b">·</span>QUEST<span class="cursor" aria-hidden="true"></span></h1>
+    </div>
+    <div class="hud" aria-live="polite">
+      <div class="chip score"><span class="k">Score</span><span class="v" id="hudScore">0</span></div>
+      <div class="chip streak"><span class="k">Streak</span><span class="v" id="hudStreak">0</span></div>
+      <div class="chip rank"><span class="k">Rank</span><span class="v" id="hudRank">Trainee</span></div>
+    </div>
+  </header>
+
+  <!-- INTRO / MISSION BOARD -->
+  <section class="board" id="board">
+    <h2>Mission Briefing</h2>
+    <p class="lead">Four number systems run this machine: <b>decimal</b> (base‑10), <b>binary</b> (base‑2),
+      <b>octal</b> (base‑8) and <b>hexadecimal</b> (base‑16). Clear the trials below to prove you can read and
+      convert between all four. Each correct answer earns points; consecutive correct answers build a
+      <b>streak multiplier</b>. Miss one and the streak resets — but you always get to see the full working.</p>
+
+    <div class="modes">
+      <button class="mode m1" data-mode="learn">
+        <span class="tag">Warm‑up</span>
+        <span class="idx">TRIAL 01</span>
+        <span class="nm">Decode Drill</span>
+        <span class="ds">Read a value in one base, pick its decimal twin. Multiple choice — learn the place values.</span>
+        <span class="go">▸ begin</span>
+      </button>
+      <button class="mode m2" data-mode="convert">
+        <span class="tag">Core</span>
+        <span class="idx">TRIAL 02</span>
+        <span class="nm">Conversion Forge</span>
+        <span class="ds">Type the exact answer for any base → any base conversion. The bread and butter.</span>
+        <span class="go">▸ begin</span>
+      </button>
+      <button class="mode m3" data-mode="binary">
+        <span class="tag">Skill</span>
+        <span class="idx">TRIAL 03</span>
+        <span class="nm">Bit Builder</span>
+        <span class="ds">Flip individual bits to assemble a target byte. Feel how binary place values add up.</span>
+        <span class="go">▸ begin</span>
+      </button>
+      <button class="mode m4" data-mode="blitz">
+        <span class="tag">Boss</span>
+        <span class="idx">TRIAL 04</span>
+        <span class="nm">Base Blitz</span>
+        <span class="ds">60 seconds, rapid mixed conversions, escalating difficulty. Beat your high score.</span>
+        <span class="go">▸ begin</span>
+      </button>
+    </div>
+
+    <div class="legend">
+      <div class="li dec"><b>DEC · base‑10</b><span>digits 0–9</span></div>
+      <div class="li bin"><b>BIN · base‑2</b><span>digits 0–1</span></div>
+      <div class="li oct"><b>OCT · base‑8</b><span>digits 0–7</span></div>
+      <div class="li hex"><b>HEX · base‑16</b><span>0–9, A–F</span></div>
+    </div>
+  </section>
+
+  <!-- PLAY AREA -->
+  <section class="play" id="play" aria-live="polite">
+    <div class="bar">
+      <div class="title" id="playTitle">Conversion Forge<small id="playSub">core trial</small></div>
+      <div class="progress" id="progWrap"><i id="progBar"></i></div>
+      <div class="qcount" id="qcount">1 / 10</div>
+      <button class="btn-quit" id="btnQuit">✕ Abort</button>
+    </div>
+    <div class="stage" id="stage"><!-- injected --></div>
+  </section>
+
+  <!-- SUMMARY -->
+  <section class="summary" id="summary">
+    <h2 id="sumHead">Trial Complete</h2>
+    <div class="big" id="sumBig">0</div>
+    <div class="sub" id="sumSub">points earned</div>
+    <div class="newrank" id="sumRank"></div>
+    <div class="stats">
+      <div class="st ok"><div class="n" id="sumOk">0</div><div class="l">Correct</div></div>
+      <div class="st miss"><div class="n" id="sumMiss">0</div><div class="l">Missed</div></div>
+      <div class="st best"><div class="n" id="sumBest">0</div><div class="l">Best streak</div></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="btnAgain">Retry trial</button>
+      <button class="btn ghost" id="btnBoard">◂ Mission board</button>
+    </div>
+  </section>
+
+  <footer class="foot">BASE·QUEST // teaching build — decimal · binary · octal · hexadecimal<span id="hs"></span></footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+
+  // ---------- global session state ----------
+  const S={score:0,streak:0,best:0};
+  let lastMode="convert";
+  const RANKS=[[0,"Trainee"],[150,"Operator"],[400,"Byte Wrangler"],[800,"Base Sage"],[1400,"Hex Lord"]];
+  let hi=0; // in-session high score for blitz
+
+  const BASENAME={2:"BIN",8:"OCT",10:"DEC",16:"HEX"};
+  const BASECLASS={2:"bin",8:"oct",10:"dec",16:"hex"};
+  const toStr=(n,b)=>n.toString(b).toUpperCase();
+  const parse=(s,b)=>parseInt(s,b);
+  const rint=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+  function rank(sc){let r=RANKS[0][1];for(const[t,n]of RANKS)if(sc>=t)r=n;return r;}
+  function syncHud(){
+    $("#hudScore").textContent=S.score;
+    $("#hudStreak").textContent=S.streak;
+    $("#hudRank").textContent=rank(S.score);
+  }
+  function award(base){
+    const mult=1+Math.min(S.streak,5)*0.2;      // up to 2x at streak 5+
+    const pts=Math.round(base*mult);
+    S.score+=pts; S.streak++; S.best=Math.max(S.best,S.streak);
+    if(current){current.trialScore=(current.trialScore||0)+pts;current.correct=(current.correct||0)+1;}
+    syncHud(); return pts;
+  }
+  function fail(){S.streak=0;syncHud();}
+
+  // ---------- working / explanation builders ----------
+  function placeTable(digits,base){
+    // digits: array of digit-chars, most significant first
+    let head="<tr>",pos="<tr>",dig="<tr>",prod="<tr>";
+    const n=digits.length;let total=0;
+    for(let i=0;i<n;i++){
+      const power=n-1-i;
+      const val=parse(digits[i],base);
+      const weight=Math.pow(base,power);
+      const p=val*weight;
+      total+=p;
+      head+=`<th>digit</th>`;
+      dig+=`<td class="bit">${digits[i]}</td>`;
+      pos+=`<td class="pos">${base}<sup>${power}</sup>=${weight}</td>`;
+      prod+=`<td class="sum">${val}×${weight}=${p}</td>`;
+    }
+    head+="</tr>";pos+="</tr>";dig+="</tr>";prod+="</tr>";
+    return {html:`<table>${dig}${pos}${prod}</table>`,total};
+  }
+
+  function explainToDecimal(valStr,base){
+    const digits=valStr.toUpperCase().split("");
+    const {html,total}=placeTable(digits,base);
+    return `<div class="wt">Working · ${BASENAME[base]} → DEC by place value</div>${html}
+      <p>Add the products: <code>${digits.map((d,i)=>parse(d,base)*Math.pow(base,digits.length-1-i)).join(" + ")} = <b style="color:var(--phos)">${total}</b></code> (decimal)</p>`;
+  }
+
+  function explainFromDecimal(dec,base){
+    // repeated division
+    let n=dec,rows=[];
+    if(n===0)rows.push([0,0,"0"]);
+    while(n>0){const q=Math.floor(n/base),r=n%base;rows.push([n,q,toStr(r,base)]);n=q;}
+    let tbl=`<table><tr><th>value</th><th>÷${base} quotient</th><th>remainder</th></tr>`;
+    rows.forEach(([v,q,r])=>{tbl+=`<tr><td>${v}</td><td>${q}</td><td class="bit">${r}</td></tr>`;});
+    tbl+="</table>";
+    const rem=rows.map(r=>r[2]).reverse().join("");
+    return `<div class="wt">Working · DEC → ${BASENAME[base]} by repeated division</div>${tbl}
+      <p>Read remainders bottom‑to‑top: <code style="color:var(--phos)">${rem}</code></p>`;
+  }
+
+  function explainGeneric(valStr,from,to){
+    if(to===10) return explainToDecimal(valStr,from);
+    const dec=parse(valStr,from);
+    if(from===10) return explainFromDecimal(dec,to);
+    // via decimal
+    return explainToDecimal(valStr,from)+
+      `<p style="margin-top:10px;color:var(--amber)">Now take that decimal (${dec}) into ${BASENAME[to]}:</p>`+
+      explainFromDecimal(dec,to);
+  }
+
+  // quick binary/hex/oct grouping tip for hex<->bin
+  function groupingTip(from,to){
+    if((from===2&&to===16)||(from===16&&to===2))
+      return `Shortcut: each hex digit = exactly 4 bits. Group binary in 4s from the right (e.g. <code>1010=A</code>, <code>1111=F</code>).`;
+    if((from===2&&to===8)||(from===8&&to===2))
+      return `Shortcut: each octal digit = exactly 3 bits. Group binary in 3s from the right (e.g. <code>111=7</code>).`;
+    return `Route through decimal: convert to base‑10 first, then into the target base.`;
+  }
+
+  // ---------- view switching ----------
+  const board=$("#board"),play=$("#play"),summary=$("#summary"),stage=$("#stage");
+  function show(view){
+    board.style.display=(view==="board")?"block":"none";
+    play.classList.toggle("active",view==="play");
+    summary.classList.toggle("active",view==="summary");
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  // ======================================================
+  //  MODE ENGINES
+  // ======================================================
+  let current=null; // {mode, index, len, correct, timer...}
+
+  function startMode(mode){
+    S.streak=0; syncHud();
+    if(mode==="blitz"){ startBlitz(); return; }
+    const cfg={
+      learn:{len:8,title:"Decode Drill",sub:"warm‑up · multiple choice"},
+      convert:{len:10,title:"Conversion Forge",sub:"core · type the answer"},
+      binary:{len:6,title:"Bit Builder",sub:"skill · flip the bits"},
+    }[mode];
+    current={mode,index:0,len:cfg.len,correct:0,trialScore:0};
+    $("#playTitle").innerHTML=cfg.title+`<small>${cfg.sub}</small>`;
+    $("#progWrap").style.display="";$("#qcount").style.display="";
+    show("play"); nextQuestion();
+  }
+
+  function updateProg(){
+    $("#progBar").style.width=(current.index/current.len*100)+"%";
+    $("#qcount").textContent=`${Math.min(current.index+1,current.len)} / ${current.len}`;
+  }
+
+  function nextQuestion(){
+    if(current.index>=current.len){ endTrial(); return; }
+    updateProg();
+    if(current.mode==="learn") renderLearn();
+    else if(current.mode==="convert") renderConvert();
+    else if(current.mode==="binary") renderBinary();
+  }
+
+  // difficulty grows with index
+  function maxForIndex(i){ return [15,31,63,127,255,255,511,1023][Math.min(i,7)]||255; }
+
+  // ---- TRIAL 1: Decode Drill (MCQ to decimal) ----
+  function renderLearn(){
+    const bases=[2,8,16], from=bases[current.index%3];
+    const dec=rint(from===2?3:8, current.index<4?31:from===16?255:63);
+    const valStr=toStr(dec,from);
+    const opts=new Set([dec]);
+    while(opts.size<4){ let d=dec+pick([-1,1,2,-2,3,-3,from,-from])*rint(1,3); if(d>0&&d!==dec)opts.add(d); }
+    const arr=Array.from(opts).sort(()=>Math.random()-.5);
+    stage.innerHTML=`
+      <div class="prompt">Trial 01 · read the value</div>
+      <div class="qbox"><div class="from">${BASENAME[from]} · base‑${from}</div>
+        <div class="qval">${valStr}<span class="sub">${from}</span></div></div>
+      <div class="to dec">what is this in <b>decimal</b>?</div>
+      <div class="choices" id="choices"></div>
+      <div class="helpbar"><button class="hint-btn" id="hintBtn">◇ show place values</button></div>
+      <div class="hintpanel" id="hintPanel"></div>
+      <div class="feedback" id="fb"></div>`;
+    const cw=$("#choices");
+    arr.forEach(v=>{
+      const b=document.createElement("button");
+      b.className="choice";b.textContent=v;
+      b.onclick=()=>{
+        $$(".choice").forEach(x=>x.disabled=true);
+        if(v===dec){b.classList.add("correct");const p=award(10);verdict(true,`+${p}`);}
+        else{b.classList.add("wrong");$$(".choice").forEach(x=>{if(+x.textContent===dec)x.classList.add("correct");});fail();verdict(false);}
+        showWork(explainToDecimal(valStr,from));
+        advanceButton();
+      };
+      cw.appendChild(b);
+    });
+    $("#hintBtn").onclick=()=>{
+      const hp=$("#hintPanel");
+      hp.innerHTML=`<b>Place values (base‑${from}):</b> each position is a power of ${from}, rising right→left. Multiply each digit by its place value and add.`;
+      hp.classList.add("show");
+    };
+  }
+
+  // ---- TRIAL 2: Conversion Forge (type answer) ----
+  function renderConvert(){
+    const pairs=[[10,2],[2,10],[10,16],[16,10],[10,8],[8,10],[2,16],[16,2],[8,2],[2,8],[16,8]];
+    let [from,to]=pick(pairs);
+    const dec=rint(4,maxForIndex(current.index));
+    const valStr=toStr(dec,from), ans=toStr(dec,to);
+    const tcls=BASECLASS[to];
+    stage.innerHTML=`
+      <div class="prompt">Trial 02 · convert exactly</div>
+      <div class="qbox"><div class="from">${BASENAME[from]} · base‑${from}</div>
+        <div class="qval">${valStr}<span class="sub">${from}</span></div></div>
+      <div class="to ${tcls}">convert to <b>${BASENAME[to]}</b> · base‑${to}</div>
+      <div class="answer">
+        <input id="ansIn" autocomplete="off" spellcheck="false" placeholder="answer${to===16?" (0-9,A-F)":""}" aria-label="your answer">
+        <button class="btn" id="ansBtn">Enter ⏎</button>
+      </div>
+      <div class="helpbar"><button class="hint-btn" id="hintBtn">◇ hint</button></div>
+      <div class="hintpanel" id="hintPanel"></div>
+      <div class="feedback" id="fb"></div>`;
+    const inp=$("#ansIn");
+    inp.focus();
+    const submit=()=>{
+      let g=inp.value.trim().toUpperCase().replace(/^0+(?=.)/,"");
+      if(!g){inp.classList.add("shake");setTimeout(()=>inp.classList.remove("shake"),400);return;}
+      const norm=ans.replace(/^0+(?=.)/,"");
+      $("#ansBtn").disabled=true; inp.disabled=true;
+      if(g===norm){const p=award(20);verdict(true,`+${p}`);}
+      else{inp.classList.add("shake");verdict(false,null,`${BASENAME[to]} answer: ${ans}`);fail();}
+      showWork(explainGeneric(valStr,from,to));
+      advanceButton();
+    };
+    $("#ansBtn").onclick=submit;
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter")submit();});
+    $("#hintBtn").onclick=()=>{
+      const hp=$("#hintPanel");
+      let extra="";
+      if([2,8,16].includes(from)&&[2,8,16].includes(to)&&to!==10&&from!==10){
+        extra=`<div style="margin-top:8px">${groupingTip(from,to)}</div>`;
+      }
+      hp.innerHTML=`<b>Approach:</b> ${to===10?"multiply each digit by its place value and add.":from===10?"divide repeatedly by "+to+", read remainders bottom‑up.":"convert "+BASENAME[from]+" → decimal, then decimal → "+BASENAME[to]+"."}${extra}`;
+      hp.classList.add("show");
+    };
+  }
+
+  // ---- TRIAL 3: Bit Builder (toggle bits to match target) ----
+  function renderBinary(){
+    const bits=current.index<3?4:(current.index<5?6:8);
+    const target=rint(1,Math.pow(2,bits)-1);
+    let state=new Array(bits).fill(0);
+    stage.innerHTML=`
+      <div class="prompt">Trial 03 · build the number in binary</div>
+      <div class="qbox"><div class="from">target value</div>
+        <div class="qval" style="color:var(--amber)">${target}<span class="sub">10</span></div></div>
+      <div class="to bin">flip bits so the byte equals <b>${target}</b></div>
+      <div id="bitRow" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:6px 0 4px"></div>
+      <div style="text-align:center;color:var(--dim);font-size:13px;margin-bottom:10px">
+        current: <span id="curBin" style="color:var(--phos);font-weight:700"></span>
+        = <span id="curDec" style="color:var(--amber);font-weight:700">0</span><sub>10</sub>
+        · hex <span id="curHex" style="color:var(--cyan)">0</span> · oct <span id="curOct" style="color:var(--amber)">0</span>
+      </div>
+      <div class="answer"><button class="btn" id="lockBtn">Lock in ✓</button></div>
+      <div class="feedback" id="fb"></div>`;
+    const row=$("#bitRow");
+    for(let i=0;i<bits;i++){
+      const power=bits-1-i, weight=Math.pow(2,power);
+      const cell=document.createElement("button");
+      cell.className="choice";cell.style.cssText="width:58px;height:66px;display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:center;padding:6px;font-size:24px";
+      cell.innerHTML=`<span class="bv">0</span><span style="font-size:10px;color:var(--dim);letter-spacing:0">${weight}</span>`;
+      cell.onclick=()=>{
+        state[i]^=1;
+        cell.querySelector(".bv").textContent=state[i];
+        cell.style.borderColor=state[i]?"var(--phos)":"var(--line)";
+        cell.style.background=state[i]?"rgba(110,232,122,.14)":"#0b1119";
+        cell.style.color=state[i]?"var(--phos)":"var(--ink)";
+        refresh();
+      };
+      row.appendChild(cell);
+    }
+    function val(){return state.reduce((a,b,i)=>a+b*Math.pow(2,bits-1-i),0);}
+    function refresh(){
+      const v=val();
+      $("#curBin").textContent=state.join("");
+      $("#curDec").textContent=v;
+      $("#curHex").textContent=toStr(v,16);
+      $("#curOct").textContent=toStr(v,8);
+    }
+    refresh();
+    $("#lockBtn").onclick=()=>{
+      const v=val();
+      $("#lockBtn").disabled=true;$$("#bitRow .choice").forEach(c=>c.disabled=true);
+      if(v===target){const p=award(20);verdict(true,`+${p}`);}
+      else{verdict(false,null,`You built ${v}, target was ${target}.`);fail();}
+      const want=target.toString(2).padStart(bits,"0");
+      showWork(`<div class="wt">Target ${target} in binary</div>
+        <p><code style="color:var(--phos);font-size:16px">${want}</code> — set bits are the place values that sum to ${target}:
+        <code>${want.split("").map((b,i)=>b==="1"?Math.pow(2,bits-1-i):null).filter(Boolean).join(" + ")||0} = ${target}</code></p>`);
+      advanceButton();
+    };
+  }
+
+  // ---- shared feedback helpers (non-blitz) ----
+  function verdict(ok,pts,note){
+    const fb=$("#fb");fb.classList.add("show");
+    let h=`<div class="verdict ${ok?"ok":"no"}">${ok?"✓ CORRECT "+(pts||""):"✗ NOT QUITE"}</div>`;
+    if(note)h+=`<div style="text-align:center;color:var(--danger);margin:-6px 0 10px;font-size:14px">${note}</div>`;
+    fb.innerHTML=h;
+  }
+  function showWork(html){$("#fb").innerHTML+=`<div class="work">${html}</div>`;}
+  function advanceButton(){
+    const last=current.index>=current.len-1;
+    $("#fb").innerHTML+=`<div class="next-row"><button class="btn" id="nextBtn">${last?"See results ▸":"Next ▸"}</button></div>`;
+    const nb=$("#nextBtn");nb.focus();
+    nb.onclick=()=>{current.index++;nextQuestion();};
+    document.onkeydown=e=>{if(e.key==="Enter"&&$("#nextBtn")){e.preventDefault();current.index++;document.onkeydown=null;nextQuestion();}};
+  }
+
+  function endTrial(){
+    $("#progBar").style.width="100%";
+    document.onkeydown=null;
+    show("summary");
+    $("#sumHead").textContent="Trial Complete";
+    $("#sumBig").textContent=current.trialScore||0;
+    $("#sumSub").textContent="points this trial";
+    $("#sumRank").textContent=`rank: ${rank(S.score)} · total ${S.score}`;
+    $("#sumOk").textContent=current.correct||0;
+    $("#sumMiss").textContent=current.len-(current.correct||0);
+    $("#sumBest").textContent=S.best;
+    lastMode=current.mode;
+  }
+
+  // ======================================================
+  //  TRIAL 4: BASE BLITZ (timed)
+  // ======================================================
+  let blitz=null;
+  function startBlitz(){
+    blitz={time:60,pts:0,ok:0,miss:0,best:0,streak:0,timer:null};
+    $("#playTitle").innerHTML=`Base Blitz<small>boss · 60‑second sprint</small>`;
+    $("#progWrap").style.display="none";
+    show("play");
+    tickSetup();
+    blitzQuestion();
+    blitz.timer=setInterval(()=>{
+      blitz.time--; renderClock();
+      if(blitz.time<=0){clearInterval(blitz.timer);endBlitz();}
+    },1000);
+  }
+  function tickSetup(){ $("#qcount").innerHTML=`<span id="clk">60</span>s`; }
+  function renderClock(){
+    const c=$("#clk"); if(!c)return;
+    c.textContent=blitz.time;
+    c.style.color=blitz.time<=10?"var(--danger)":blitz.time<=20?"var(--amber)":"var(--dim)";
+  }
+  function blitzQuestion(){
+    const pairs=[[10,2],[2,10],[10,16],[16,10],[10,8],[8,10],[2,16],[16,2],[8,2],[2,8]];
+    let [from,to]=pick(pairs);
+    const cap=blitz.pts<80?31:blitz.pts<200?127:255;
+    const dec=rint(4,cap);
+    const valStr=toStr(dec,from), ans=toStr(dec,to);
+    stage.innerHTML=`
+      <div class="prompt" style="color:var(--amber)">⚡ blitz · streak ${blitz.streak}</div>
+      <div class="qbox"><div class="from">${BASENAME[from]} · base‑${from}</div>
+        <div class="qval">${valStr}<span class="sub">${from}</span></div></div>
+      <div class="to ${BASECLASS[to]}">→ <b>${BASENAME[to]}</b></div>
+      <div class="answer">
+        <input id="bIn" autocomplete="off" spellcheck="false" placeholder="type & press ⏎" aria-label="answer">
+      </div>
+      <div id="bFlash" style="text-align:center;height:24px;font-weight:700;letter-spacing:.1em"></div>`;
+    const inp=$("#bIn");inp.focus();
+    const submit=()=>{
+      let g=inp.value.trim().toUpperCase().replace(/^0+(?=.)/,"");
+      if(!g)return;
+      const norm=ans.replace(/^0+(?=.)/,"");
+      const fl=$("#bFlash");
+      if(g===norm){
+        blitz.streak++;blitz.best=Math.max(blitz.best,blitz.streak);
+        const p=10+Math.min(blitz.streak,8);blitz.pts+=p;blitz.ok++;
+        S.score+=p;syncHud();
+        fl.style.color="var(--phos)";fl.textContent=`✓ +${p}`;
+        blitz.time=Math.min(blitz.time+1,99); renderClock();
+      }else{
+        blitz.streak=0;blitz.miss++;
+        fl.style.color="var(--danger)";fl.textContent=`✗ ${ans}`;
+      }
+      $("#hudScore").textContent=S.score;
+      setTimeout(blitzQuestion,420);
+    };
+    inp.addEventListener("keydown",e=>{if(e.key==="Enter")submit();});
+  }
+  function endBlitz(){
+    document.onkeydown=null;
+    hi=Math.max(hi,blitz.pts);
+    const beat=blitz.pts>=hi&&blitz.pts>0;
+    S.best=Math.max(S.best,blitz.best);
+    show("summary");
+    $("#sumHead").textContent="Blitz Over";
+    $("#sumBig").textContent=blitz.pts;
+    $("#sumSub").textContent="blitz points";
+    $("#sumRank").textContent = (blitz.pts>=hi&&blitz.pts>0? "★ New session best!":"session best: "+hi);
+    $("#sumOk").textContent=blitz.ok;
+    $("#sumMiss").textContent=blitz.miss;
+    $("#sumBest").textContent=blitz.best;
+    lastMode="blitz";
+  }
+
+  // ---------- controls ----------
+  $$(".mode").forEach(b=>b.addEventListener("click",()=>startMode(b.dataset.mode)));
+  $("#btnQuit").onclick=()=>{
+    if(blitz&&blitz.timer)clearInterval(blitz.timer);
+    document.onkeydown=null; show("board");
+  };
+  $("#btnBoard").onclick=()=>show("board");
+  $("#btnAgain").onclick=()=>startMode(lastMode);
+
+  syncHud();
+})();
+</script>
+</body>
+</html>
